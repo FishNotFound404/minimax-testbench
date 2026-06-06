@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniMax 多模态测试台</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MiniMax 多模态测试台</h1>
+            <p class="subtitle">点击生成，即时查看 / 复用已有产物</p>
+        </header>
+
+        <div class="banner" id="banner">
+            <strong>提示：</strong>视频生成今日 Token Plan 额度已用完，按钮仍可点击，调用会返回余额不足错误；其他能力不受影响。
+        </div>
+
+        <nav class="tabs" id="tabs">
+            <button class="tab active" data-tab="tts">语音合成 TTS</button>
+            <button class="tab" data-tab="design">声音设计</button>
+            <button class="tab" data-tab="clone">音色克隆</button>
+            <button class="tab" data-tab="music">音乐生成</button>
+            <button class="tab" data-tab="cover">音乐翻唱</button>
+            <button class="tab" data-tab="image">图片生成</button>
+            <button class="tab" data-tab="video">视频生成</button>
+        </nav>
+
+        <section class="panel active" data-panel="tts">
+            <form id="form-tts" class="form">
+                <div class="field">
+                    <label>文本</label>
+                    <textarea name="text" rows="3" required>今天的天气真好，我们一起去公园散步吧。</textarea>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>音色</label>
+                        <select name="voice_id" id="tts-voice"></select>
+                    </div>
+                    <div class="field">
+                        <label>模型</label>
+                        <select name="model">
+                            <option value="speech-2.6-hd" selected>speech-2.6-hd</option>
+                            <option value="speech-2.6-turbo">speech-2.6-turbo</option>
+                            <option value="speech-2.8-hd">speech-2.8-hd</option>
+                            <option value="speech-2.8-turbo">speech-2.8-turbo</option>
+                            <option value="speech-02-hd">speech-02-hd</option>
+                            <option value="speech-01-turbo">speech-01-turbo</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>情绪</label>
+                        <select name="emotion">
+                            <option value="">无</option>
+                            <option value="happy">happy</option>
+                            <option value="sad">sad</option>
+                            <option value="angry">angry</option>
+                            <option value="calm">calm</option>
+                            <option value="fluent">fluent</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="primary">生成语音</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="panel" data-panel="design">
+            <form id="form-design" class="form">
+                <div class="field">
+                    <label>音色描述 prompt</label>
+                    <textarea name="prompt" rows="2" required>温柔知性的青年女性，声音略带磁性，语速平稳，适合深夜电台。</textarea>
+                </div>
+                <div class="field">
+                    <label>试听文本 preview_text</label>
+                    <textarea name="preview_text" rows="2" required>晚上好，今天我们来聊聊星空与梦想。</textarea>
+                </div>
+                <div class="field">
+                    <label>自定义 voice_id（留空自动生成）</label>
+                    <input type="text" name="voice_id" placeholder="例：MyVoice001">
+                </div>
+                <button type="submit" class="primary">设计音色</button>
+                <div class="status" data-status></div>
+            </form>
+            <div id="design-result" class="result-card hidden"></div>
+            <form id="form-design-synth" class="form sub-form hidden">
+                <div class="field">
+                    <label>用此音色合成</label>
+                    <textarea name="text" rows="2" required>这段话用我们刚设计的音色来朗读。</textarea>
+                    <input type="hidden" name="voice_id" id="design-voice-id">
+                </div>
+                <button type="submit" class="primary">合成试听</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="panel" data-panel="clone">
+            <div class="warn-box">音色克隆当前账号未开通（错误码 2038），需在控制台申请 KYC。下方仍可触发用于验证。</div>
+            <form id="form-clone" class="form">
+                <div class="row">
+                    <div class="field">
+                        <label>自定义 voice_id</label>
+                        <input type="text" name="voice_id" value="WebCloneTest01" required>
+                    </div>
+                    <div class="field">
+                        <label>参考音频</label>
+                        <select name="ref_path" id="clone-ref"></select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>参考音频对应文本（可选）</label>
+                    <input type="text" name="text" value="这是一段用于克隆的参考音频。">
+                </div>
+                <button type="submit" class="primary">上传并克隆</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="panel" data-panel="music">
+            <form id="form-music" class="form">
+                <div class="field">
+                    <label>音乐描述 prompt</label>
+                    <textarea name="prompt" rows="2" required>夏日海边、轻松愉快、清新吉他、男声主唱</textarea>
+                </div>
+                <div class="field">
+                    <label>歌词 lyrics（留空 + 勾选 optimizer 可自动写词）</label>
+                    <textarea name="lyrics" rows="5" placeholder="[verse]&#10;街灯微亮晚风轻抚&#10;..."></textarea>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>模型</label>
+                        <select name="model">
+                            <option value="music-2.6" selected>music-2.6</option>
+                            <option value="music-2.6-free">music-2.6-free</option>
+                        </select>
+                    </div>
+                    <div class="field check">
+                        <label><input type="checkbox" name="is_instrumental"> 纯音乐</label>
+                    </div>
+                    <div class="field check">
+                        <label><input type="checkbox" name="lyrics_optimizer"> 自动写词</label>
+                    </div>
+                </div>
+                <button type="submit" class="primary">生成音乐</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="panel" data-panel="cover">
+            <div class="warn-box">翻唱需 5~10 分钟，prompt 必须用英文。</div>
+            <form id="form-cover" class="form">
+                <div class="field">
+                    <label>翻唱 prompt（英文）</label>
+                    <textarea name="prompt" rows="2" required>convert this indie folk into electronic dance music, strong beat, night party vibe</textarea>
+                </div>
+                <div class="field">
+                    <label>参考音频</label>
+                    <select name="ref_name" id="cover-ref"></select>
+                </div>
+                <button type="submit" class="primary">生成翻唱</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="panel" data-panel="image">
+            <form id="form-image" class="form">
+                <div class="field">
+                    <label>图片描述 prompt</label>
+                    <textarea name="prompt" rows="3" required>赛博朋克风格的城市夜景，霓虹灯反射在湿润的街道上，电影感构图</textarea>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>模型</label>
+                        <select name="model">
+                            <option value="image-01" selected>image-01</option>
+                            <option value="image-01-live">image-01-live</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>宽高比</label>
+                        <select name="aspect_ratio">
+                            <option value="1:1">1:1</option>
+                            <option value="16:9" selected>16:9</option>
+                            <option value="4:3">4:3</option>
+                            <option value="3:2">3:2</option>
+                            <option value="2:3">2:3</option>
+                            <option value="3:4">3:4</option>
+                            <option value="9:16">9:16</option>
+                            <option value="21:9">21:9</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>数量</label>
+                        <input type="number" name="n" value="1" min="1" max="9">
+                    </div>
+                </div>
+                <button type="submit" class="primary">生成图片</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="panel" data-panel="video">
+            <div class="warn-box">视频生成今日 Token Plan 额度可能已用完，调用会返回错误；下方已生成的 3 个视频仍可查看。</div>
+            <form id="form-video" class="form">
+                <div class="field">
+                    <label>视频描述（支持 [Push in] / [Pan left] 等 15 种运镜）</label>
+                    <textarea name="prompt" rows="3" required>A futuristic cityscape at night, neon signs reflect on wet streets, camera starts low and pushes forward [Push in] while slowly panning left [Pan left]</textarea>
+                </div>
+                <div class="row">
+                    <div class="field">
+                        <label>模型</label>
+                        <select name="model">
+                            <option value="MiniMax-Hailuo-2.3" selected>MiniMax-Hailuo-2.3</option>
+                            <option value="MiniMax-Hailuo-02">MiniMax-Hailuo-02</option>
+                            <option value="T2V-01-Director">T2V-01-Director</option>
+                            <option value="T2V-01">T2V-01</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>分辨率</label>
+                        <select name="resolution">
+                            <option value="768P" selected>768P</option>
+                            <option value="1080P">1080P</option>
+                            <option value="720P">720P</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label>时长</label>
+                        <select name="duration">
+                            <option value="6" selected>6s</option>
+                            <option value="10">10s</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="primary">生成视频</button>
+                <div class="status" data-status></div>
+            </form>
+        </section>
+
+        <section class="gallery-section">
+            <h2>产物画廊</h2>
+            <div class="gallery-tabs">
+                <button class="g-tab active" data-gtab="audio">音频 (TTS / 设计 / 克隆)</button>
+                <button class="g-tab" data-gtab="music">音乐</button>
+                <button class="g-tab" data-gtab="images">图片</button>
+                <button class="g-tab" data-gtab="videos">视频</button>
+            </div>
+            <div class="gallery empty" id="gallery"></div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
