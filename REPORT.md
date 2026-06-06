@@ -149,7 +149,7 @@
 ## 5. 项目代码结构
 
 ```
-minimax_test/
+minimax-testbench/
 ├── config.py                  # 环境变量加载
 ├── minimax_client.py          # 统一客户端（POST/GET/upload/download）
 ├── modules/
