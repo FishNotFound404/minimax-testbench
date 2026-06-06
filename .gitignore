@@ -10,7 +10,6 @@ samples/
 *.pcm
 *.jpg
 *.jpeg
-*.png
 *.webp
 *.mp4
 *.mov
@@ -19,4 +18,8 @@ samples/
 Thumbs.db
 .DS_Store
 *.log
+
+# 文档截图是仓库的一部分
+!docs/
+!docs/*.png
 

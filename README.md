@@ -6,6 +6,16 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 [![API: api.minimaxi.com](https://img.shields.io/badge/API-api.minimaxi.com-orange)](https://platform.minimaxi.com/)
 
+## 📸 截图
+
+| 语音合成 TTS | 图片生成 |
+| --- | --- |
+| ![TTS](./docs/screenshot_tts.png) | ![Image](./docs/screenshot_image.png) |
+
+| 视频生成 | 音乐生成 |
+| --- | --- |
+| ![Video](./docs/screenshot_video.png) | ![Music](./docs/screenshot_music.png) |
+
 ## ✨ 特性
 
 - **6 大能力一站式覆盖** — TTS / 声音设计 / 音色克隆 / 音乐 / 图片 / 视频

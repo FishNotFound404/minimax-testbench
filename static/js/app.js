@@ -212,12 +212,28 @@ attachForm("video", "/api/video", (data) => {
     if (state.currentGallery === "videos") renderGallery();
 });
 
-$$(".tab").forEach((b) => b.addEventListener("click", () => switchTab(b.dataset.tab)));
-$$(".g-tab").forEach((b) => b.addEventListener("click", () => switchGallery(b.dataset.gtab)));
+$$(".tab").forEach((b) => b.addEventListener("click", () => {
+    switchTab(b.dataset.tab);
+    history.replaceState(null, "", "#" + b.dataset.tab);
+}));
+$$(".g-tab").forEach((b) => b.addEventListener("click", () => {
+    switchGallery(b.dataset.gtab);
+    history.replaceState(null, "", "#" + b.dataset.tab + "/" + b.dataset.gtab);
+}));
+
+function initFromHash() {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const [tab, gtab] = hash.split("/");
+    const validTabs = ["tts", "design", "clone", "music", "cover", "image", "video"];
+    if (tab && validTabs.includes(tab)) switchTab(tab);
+    if (gtab && ["audio", "music", "images", "videos"].includes(gtab)) switchGallery(gtab);
+}
 
 (async function init() {
     await refreshFiles();
     populateRefAudios($("#clone-ref"), ["audio"]);
     populateRefAudios($("#cover-ref"), ["music", "audio"]);
     await loadVoices();
+    initFromHash();
 })();
