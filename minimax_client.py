@@ -11,6 +11,7 @@ from config import (
     LONG_TIMEOUT,
     MINIMAX_API_KEY,
     MINIMAX_BASE_URL,
+    MINIMAX_GROUP_ID,
 )
 
 
@@ -103,6 +104,44 @@ class MiniMaxClient:
                     if chunk:
                         f.write(chunk)
         return save_path
+
+    def chat(
+        self,
+        messages: list,
+        model: str = "MiniMax-Text-01",
+        temperature: float = 0.7,
+        max_tokens: int = 1024,
+        timeout: int = DEFAULT_TIMEOUT,
+    ) -> str:
+        """调用 minimax 文本生成（LLM）接口，返回首条 assistant 文本。
+
+        messages: [{"role": "system"|"user"|"assistant", "content": "..."}, ...]
+        """
+        body = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        params: Dict[str, Any] = {}
+        if MINIMAX_GROUP_ID:
+            params["GroupId"] = MINIMAX_GROUP_ID
+
+        resp = self.session.post(
+            self._url("/v1/text/chatcompletion_v2"),
+            json=body,
+            params=params,
+            timeout=timeout,
+        )
+        data = self._check(resp)
+        try:
+            return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise MiniMaxAPIError(
+                resp.status_code,
+                f"无法从 LLM 响应中提取文本: {e}; payload={data}",
+                data,
+            )
 
 
 _client: Optional[MiniMaxClient] = None

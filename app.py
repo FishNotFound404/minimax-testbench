@@ -8,7 +8,7 @@ sys.path.insert(0, str(ROOT))
 from flask import Flask, abort, jsonify, render_template, request, send_from_directory
 
 from config import OUTPUT_DIR
-from minimax_client import MiniMaxAPIError
+from minimax_client import MiniMaxAPIError, get_client
 from modules import (
     design_voice,
     generate_image,
@@ -101,6 +101,72 @@ def api_voices():
         return jsonify({"error": str(e), "code": e.status_code}), 502
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+# 每种 prompt 类型的优化系统指令。所有 system prompt 都要求：
+# 1) 只返回优化后的 prompt 本体，不要解释、不要引号、不要 Markdown 包裹
+# 2) 保留用户原始语言（cover 除外，必须英文）
+# 3) 如果用户已经写得很好，则在原文基础上做最小改动润色
+_PROMPT_OPTIMIZE_SYSTEM = {
+    "design": (
+        "你是一个音色描述（voice design）专家，擅长把口语化描述改写成"
+        "更精准、更适合 TTS 系统的音色 prompt。要求覆盖：音色特质、性别与年龄段、"
+        "语速与节奏、情绪基调、适用场景。只返回优化后的中文文本本身，不要任何解释或包装。"
+    ),
+    "music": (
+        "你是一个 AI 音乐生成 prompt 专家，擅长把简短描述扩展为适合 music-2.6 的风格描述。"
+        "应覆盖：流派、情绪、节奏与 BPM、乐器、人声（性别/质感）、场景氛围。"
+        "只返回优化后的中文文本本身，不要任何解释或包装。"
+    ),
+    "cover": (
+        "You are a music cover prompt expert. The user may write in any language, but you MUST "
+        "output the optimized prompt in English only (the music-cover endpoint rejects or stalls on "
+        "Chinese prompts). Cover these aspects: target genre/style, tempo/energy, instrumentation, "
+        "vocal treatment, mood, and what to preserve from the original. "
+        "Return ONLY the optimized English prompt, no quotes, no explanation, no markdown."
+    ),
+    "image": (
+        "你是一个 AI 图片生成 prompt 专家，擅长把中文描述改写为结构清晰、细节丰富的英文 prompt。"
+        "保留中文里的核心意图，用英文组织：subject, style, lighting, composition, camera/lens, mood, color palette。"
+        "只返回优化后的英文 prompt 本身，不要任何解释或包装。"
+    ),
+    "video": (
+        "你是一个 AI 视频生成 prompt 专家。用户输入可能是中英文混合（包含 [Push in] / [Pan left] "
+        "等运镜标签），请保留这些运镜标签，输出统一的英文 prompt，覆盖：主体、动作、场景、"
+        "镜头与运镜、节奏、氛围、光影。只返回优化后的英文 prompt 本身，不要任何解释或包装。"
+    ),
+}
+
+
+@app.route("/api/optimize_prompt", methods=["POST"])
+def api_optimize_prompt():
+    data = request.get_json(silent=True) or {}
+    prompt = (data.get("prompt") or "").strip()
+    kind = (data.get("kind") or "").strip()
+    if not prompt:
+        return jsonify({"ok": False, "error": "prompt 不能为空"}), 400
+    if kind not in _PROMPT_OPTIMIZE_SYSTEM:
+        return jsonify({"ok": False, "error": f"不支持的 kind: {kind}"}), 400
+
+    system_prompt = _PROMPT_OPTIMIZE_SYSTEM[kind]
+    try:
+        optimized = get_client().chat(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.7,
+            max_tokens=512,
+        )
+    except MiniMaxAPIError as e:
+        return jsonify({"ok": False, "error": str(e), "code": e.status_code}), 502
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    optimized = (optimized or "").strip().strip("`").strip('"').strip("'").strip()
+    if not optimized:
+        return jsonify({"ok": False, "error": "LLM 返回为空"}), 502
+    return jsonify({"ok": True, "optimized": optimized, "kind": kind})
 
 
 @app.route("/api/tts", methods=["POST"])

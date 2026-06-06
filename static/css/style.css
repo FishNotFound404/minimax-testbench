@@ -191,3 +191,44 @@ button.primary:disabled { background: #999; cursor: not-allowed; }
     .panel, .gallery-section { padding: 0.8rem; }
     .gallery { grid-template-columns: 1fr; }
 }
+
+
+/* --- 输入框动作按钮（语音输入 / AI 优化 prompt） --- */
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+.field-header label { margin: 0; }
+.field-header .input-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+.icon-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    color: var(--text);
+}
+.icon-btn:hover { background: #ececec; border-color: #b8b8bd; }
+.icon-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.icon-btn.recording {
+    background: var(--error);
+    color: white;
+    border-color: var(--error);
+    animation: pulse-record 1.2s ease-in-out infinite;
+}
+@keyframes pulse-record {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(255, 59, 48, 0); }
+}

@@ -31,7 +31,7 @@
             <form id="form-tts" class="form">
                 <div class="field">
                     <label>文本</label>
-                    <textarea name="text" rows="3" required>今天的天气真好，我们一起去公园散步吧。</textarea>
+                    <textarea name="text" rows="3" data-actions="voice" required>今天的天气真好，我们一起去公园散步吧。</textarea>
                 </div>
                 <div class="row">
                     <div class="field">
@@ -70,11 +70,11 @@
             <form id="form-design" class="form">
                 <div class="field">
                     <label>音色描述 prompt</label>
-                    <textarea name="prompt" rows="2" required>温柔知性的青年女性，声音略带磁性，语速平稳，适合深夜电台。</textarea>
+                    <textarea name="prompt" rows="2" data-actions="voice optimize:design" required>温柔知性的青年女性，声音略带磁性，语速平稳，适合深夜电台。</textarea>
                 </div>
                 <div class="field">
                     <label>试听文本 preview_text</label>
-                    <textarea name="preview_text" rows="2" required>晚上好，今天我们来聊聊星空与梦想。</textarea>
+                    <textarea name="preview_text" rows="2" data-actions="voice" required>晚上好，今天我们来聊聊星空与梦想。</textarea>
                 </div>
                 <div class="field">
                     <label>自定义 voice_id（留空自动生成）</label>
@@ -87,7 +87,7 @@
             <form id="form-design-synth" class="form sub-form hidden">
                 <div class="field">
                     <label>用此音色合成</label>
-                    <textarea name="text" rows="2" required>这段话用我们刚设计的音色来朗读。</textarea>
+                    <textarea name="text" rows="2" data-actions="voice" required>这段话用我们刚设计的音色来朗读。</textarea>
                     <input type="hidden" name="voice_id" id="design-voice-id">
                 </div>
                 <button type="submit" class="primary">合成试听</button>
@@ -110,7 +110,7 @@
                 </div>
                 <div class="field">
                     <label>参考音频对应文本（可选）</label>
-                    <input type="text" name="text" value="这是一段用于克隆的参考音频。">
+                    <input type="text" name="text" data-actions="voice" value="这是一段用于克隆的参考音频。">
                 </div>
                 <button type="submit" class="primary">上传并克隆</button>
                 <div class="status" data-status></div>
@@ -121,11 +121,11 @@
             <form id="form-music" class="form">
                 <div class="field">
                     <label>音乐描述 prompt</label>
-                    <textarea name="prompt" rows="2" required>夏日海边、轻松愉快、清新吉他、男声主唱</textarea>
+                    <textarea name="prompt" rows="2" data-actions="voice optimize:music" required>夏日海边、轻松愉快、清新吉他、男声主唱</textarea>
                 </div>
                 <div class="field">
                     <label>歌词 lyrics（留空 + 勾选 optimizer 可自动写词）</label>
-                    <textarea name="lyrics" rows="5" placeholder="[verse]&#10;街灯微亮晚风轻抚&#10;..."></textarea>
+                    <textarea name="lyrics" rows="5" data-actions="voice" placeholder="[verse]&#10;街灯微亮晚风轻抚&#10;..."></textarea>
                 </div>
                 <div class="row">
                     <div class="field">
@@ -152,7 +152,7 @@
             <form id="form-cover" class="form">
                 <div class="field">
                     <label>翻唱 prompt（英文）</label>
-                    <textarea name="prompt" rows="2" required>convert this indie folk into electronic dance music, strong beat, night party vibe</textarea>
+                    <textarea name="prompt" rows="2" data-actions="voice optimize:cover" required>convert this indie folk into electronic dance music, strong beat, night party vibe</textarea>
                 </div>
                 <div class="field">
                     <label>参考音频</label>
@@ -167,7 +167,7 @@
             <form id="form-image" class="form">
                 <div class="field">
                     <label>图片描述 prompt</label>
-                    <textarea name="prompt" rows="3" required>赛博朋克风格的城市夜景，霓虹灯反射在湿润的街道上，电影感构图</textarea>
+                    <textarea name="prompt" rows="3" data-actions="voice optimize:image" required>赛博朋克风格的城市夜景，霓虹灯反射在湿润的街道上，电影感构图</textarea>
                 </div>
                 <div class="row">
                     <div class="field">
@@ -205,7 +205,7 @@
             <form id="form-video" class="form">
                 <div class="field">
                     <label>视频描述（支持 [Push in] / [Pan left] 等 15 种运镜）</label>
-                    <textarea name="prompt" rows="3" required>A futuristic cityscape at night, neon signs reflect on wet streets, camera starts low and pushes forward [Push in] while slowly panning left [Pan left]</textarea>
+                    <textarea name="prompt" rows="3" data-actions="voice optimize:video" required>A futuristic cityscape at night, neon signs reflect on wet streets, camera starts low and pushes forward [Push in] while slowly panning left [Pan left]</textarea>
                 </div>
                 <div class="row">
                     <div class="field">

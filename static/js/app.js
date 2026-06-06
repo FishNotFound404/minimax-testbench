@@ -231,9 +231,176 @@ function initFromHash() {
 }
 
 (async function init() {
+    injectInputActions();
     await refreshFiles();
     populateRefAudios($("#clone-ref"), ["audio"]);
     populateRefAudios($("#cover-ref"), ["music", "audio"]);
     await loadVoices();
-    initFromHash();
 })();
+
+// ============================================================
+// 语音输入 + Prompt 优化（JS 注入式）
+// ============================================================
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let _activeRecognition = null;
+let _activeVoiceBtn = null;
+
+function stopActiveRecognition() {
+    if (_activeRecognition) {
+        try { _activeRecognition.stop(); } catch (e) {}
+        _activeRecognition = null;
+    }
+    if (_activeVoiceBtn) {
+        _activeVoiceBtn.classList.remove("recording");
+        _activeVoiceBtn = null;
+    }
+}
+
+function toggleVoiceRecognition(input, btn) {
+    if (!SR) {
+        alert("当前浏览器不支持 Web Speech API。\n请用 Chrome / Edge / Safari 14+。");
+        return;
+    }
+    if (_activeVoiceBtn === btn) {
+        stopActiveRecognition();
+        return;
+    }
+    stopActiveRecognition();
+
+    const rec = new SR();
+    rec.lang = "zh-CN";
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+
+    const baseValue = input.value;
+    const cursorPos = (input.selectionEnd != null ? input.selectionEnd : baseValue.length) || baseValue.length;
+    let finalText = "";
+    let interimText = "";
+
+    rec.onresult = (ev) => {
+        interimText = "";
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+            const t = ev.results[i][0].transcript;
+            if (ev.results[i].isFinal) finalText += t;
+            else interimText += t;
+        }
+        const before = baseValue.slice(0, cursorPos);
+        const after = baseValue.slice(cursorPos);
+        input.value = before + finalText + interimText + after;
+    };
+    rec.onerror = (ev) => {
+        if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+            alert("麦克风权限被拒绝，请在浏览器地址栏允许后重试。");
+        } else if (ev.error !== "no-speech") {
+            console.warn("[voice] error", ev.error);
+        }
+        stopActiveRecognition();
+    };
+    rec.onend = () => {
+        if (interimText) {
+            const before = baseValue.slice(0, cursorPos);
+            const after = baseValue.slice(cursorPos);
+            input.value = before + finalText + after;
+        }
+        if (_activeVoiceBtn === btn) {
+            btn.classList.remove("recording");
+            _activeVoiceBtn = null;
+            _activeRecognition = null;
+        }
+    };
+
+    _activeRecognition = rec;
+    _activeVoiceBtn = btn;
+    btn.classList.add("recording");
+    try {
+        rec.start();
+    } catch (e) {
+        console.warn("[voice] start failed", e);
+        stopActiveRecognition();
+    }
+}
+
+async function optimizePrompt(input, kind, btn) {
+    const text = input.value.trim();
+    if (!text) {
+        alert("请先输入一些 prompt 内容。");
+        return;
+    }
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const origLabel = btn.textContent;
+    btn.textContent = "⏳";
+    try {
+        const r = await postJSON("/api/optimize_prompt", { prompt: text, kind });
+        if (r.data && r.data.ok) {
+            input.value = r.data.optimized;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            btn.textContent = "✅";
+        } else {
+            btn.textContent = "❌";
+            alert("优化失败: " + ((r.data && r.data.error) || "未知错误"));
+        }
+    } catch (e) {
+        btn.textContent = "❌";
+        alert("请求失败: " + e.message);
+    } finally {
+        setTimeout(() => {
+            btn.textContent = origLabel;
+            btn.disabled = false;
+        }, 1200);
+    }
+}
+
+function injectInputActions() {
+    document.querySelectorAll("[data-actions]").forEach((input) => {
+        const tokens = (input.dataset.actions || "")
+            .split(/\s+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+        if (tokens.length === 0) return;
+        const field = input.closest(".field");
+        if (!field) return;
+        const label = field.querySelector(":scope > label");
+        if (!label) return;
+
+        let header = field.querySelector(":scope > .field-header");
+        if (!header) {
+            header = document.createElement("div");
+            header.className = "field-header";
+            label.parentNode.insertBefore(header, label);
+            header.appendChild(label);
+            const actions = document.createElement("div");
+            actions.className = "input-actions";
+            header.appendChild(actions);
+        }
+        const actionsContainer = header.querySelector(".input-actions");
+
+        tokens.forEach((tok) => {
+            if (tok === "voice") {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "icon-btn voice-btn";
+                btn.textContent = "🎙️";
+                btn.title = "语音输入（需 Chrome/Edge 等支持 Web Speech API 的浏览器）";
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    toggleVoiceRecognition(input, btn);
+                });
+                actionsContainer.appendChild(btn);
+            } else if (tok.startsWith("optimize:")) {
+                const kind = tok.slice("optimize:".length);
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "icon-btn optimize-btn";
+                btn.textContent = "✨";
+                btn.title = `AI 优化 prompt（${kind} 类型专用）`;
+                btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    optimizePrompt(input, kind, btn);
+                });
+                actionsContainer.appendChild(btn);
+            }
+        });
+    });
+}
