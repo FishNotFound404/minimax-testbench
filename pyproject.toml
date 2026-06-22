@@ -1,0 +1,23 @@
+[project]
+name = "minimax-testbench"
+version = "0.1.0"
+description = "可视化测试台 + Python 模块库，用于 MiniMax 开放平台的多模态 API（TTS / 声音设计 / 音色克隆 / 音乐 / 图片 / 视频）"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "Pillow>=10.0.0",
+    "flask>=3.0.0",
+]
+
+[project.urls]
+Repository = "https://github.com/<your-username>/minimax-testbench"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["modules"]

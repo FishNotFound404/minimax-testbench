@@ -3,12 +3,12 @@
 用法：
     python start.py
     py start.py              # Windows Python Launcher
+    uv run start.py          # uv 模式下：自动同步依赖并启动
 
 执行步骤：
-1. 校验 Python 版本（要求 3.10+）
-2. 若 .env 不存在，从 .env.example 复制一份
-3. 校验依赖是否已安装；缺失则提示并退出（避免静默安装到全局环境）
-4. 启动 app.py，Ctrl+C 退出
+1. 若 .env 不存在，从 .env.example 复制一份并提示用户填入 API Key
+2. 优先使用 uv：执行 `uv run python app.py`，uv 会按需同步依赖
+3. 回退：若未安装 uv，则要求系统已通过 pip 安装好依赖，再启动 app.py
 """
 
 from __future__ import annotations
@@ -19,11 +19,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-MIN_PY = (3, 10)
 APP_ENTRY = ROOT / "app.py"
 ENV_FILE = ROOT / ".env"
 ENV_EXAMPLE = ROOT / ".env.example"
-REQUIREMENTS = ROOT / "requirements.txt"
 
 
 def info(msg: str) -> None:
@@ -39,14 +37,8 @@ def fail(msg: str) -> "None":
     sys.exit(1)
 
 
-def check_python() -> None:
-    if sys.version_info < MIN_PY:
-        major, minor = MIN_PY
-        current = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-        fail(
-            f"需要 Python {major}.{minor}+，当前是 {current}。\n"
-            f"  下载：https://www.python.org/downloads/"
-        )
+def which(cmd: str) -> str | None:
+    return shutil.which(cmd)
 
 
 def ensure_env() -> None:
@@ -59,18 +51,21 @@ def ensure_env() -> None:
     sys.exit(0)
 
 
-def check_dependencies() -> None:
+def run_with_uv() -> int:
+    info("使用 uv 启动：uv run 会按需同步 pyproject.toml 中的依赖")
+    info("打开 http://127.0.0.1:5001/ 即可使用")
+    return subprocess.call(["uv", "run", "python", str(APP_ENTRY)], cwd=str(ROOT))
+
+
+def run_with_pip() -> int:
     try:
         from flask import Flask  # noqa: F401
     except ImportError:
-        cmd = f"{sys.executable} -m pip install -r {REQUIREMENTS.name}"
         fail(
-            "依赖未安装。\n"
-            f"  请先执行：{cmd}"
+            "未检测到 uv，且依赖未安装。\n"
+            "  推荐：先安装 uv (https://docs.astral.sh/uv/) 后重新运行；\n"
+            f"  或者：{sys.executable} -m pip install -r {ROOT / 'pyproject.toml'}"
         )
-
-
-def run_app() -> int:
     info("启动 Flask Web UI（按 Ctrl+C 停止）")
     info("打开 http://127.0.0.1:5001/ 即可使用")
     return subprocess.call([sys.executable, str(APP_ENTRY)], cwd=str(ROOT))
@@ -80,10 +75,12 @@ def main() -> None:
     print("=" * 50)
     print("  minimax-testbench 一键启动")
     print("=" * 50)
-    check_python()
     ensure_env()
-    check_dependencies()
-    raise SystemExit(run_app())
+    if which("uv"):
+        raise SystemExit(run_with_uv())
+    warn("未检测到 uv，将使用系统 Python 启动。")
+    warn("推荐安装 uv 以获得自动依赖同步：https://docs.astral.sh/uv/")
+    raise SystemExit(run_with_pip())
 
 
 if __name__ == "__main__":

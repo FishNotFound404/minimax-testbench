@@ -30,37 +30,51 @@
 
 前往 [MiniMax 账户管理](https://platform.minimaxi.com/user-center/basic-information/interface-key) 获取 API Key（支持 Token Plan 订阅 Key 或按量计费 Key）。
 
-### 2. 安装
+### 2. 安装 uv
+
+本项目使用 [uv](https://docs.astral.sh/uv/) 进行依赖管理。
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### 3. 同步依赖并启动
 
 ```bash
 git clone https://github.com/<your-username>/minimax-testbench.git
 cd minimax-testbench
-pip install -r requirements.txt
+uv sync                  # 根据 pyproject.toml / uv.lock 安装依赖到 .venv
 ```
 
-### 3. 配置
+### 4. 配置
 
 ```bash
 cp .env.example .env
 # 编辑 .env，填入你的 API Key
 ```
 
-### 4. 启动 Web UI
+### 5. 启动 Web UI
 
 ```bash
-python app.py
+uv run python app.py
+# 或
+uv run start.py
 ```
 
 打开 [http://127.0.0.1:5001/](http://127.0.0.1:5001/) 即可使用。
 
-### 5. 或运行 CLI 脚本
+### 6. 或运行 CLI 脚本
 
 ```bash
-python tests/test_tts.py            # TTS
-python tests/test_voice_design.py   # 声音设计
-python tests/test_music.py          # 音乐
-python tests/test_image.py          # 图片
-python tests/test_video.py          # 视频
+uv run python tests/test_tts.py            # TTS
+uv run python tests/test_voice_design.py   # 声音设计
+uv run python tests/test_music.py          # 音乐
+uv run python tests/test_image.py          # 图片
+uv run python tests/test_video.py          # 视频
 ```
 
 ## 🧩 项目结构
@@ -68,6 +82,7 @@ python tests/test_video.py          # 视频
 ```
 minimax-testbench/
 ├── app.py                  # Flask Web 服务（端口 5001）
+├── start.py                # 一键启动脚本（自动检测 uv）
 ├── config.py               # 环境变量加载
 ├── minimax_client.py       # 统一 API 客户端
 ├── modules/                # 各能力封装（可作为 SDK 引用）
@@ -82,8 +97,9 @@ minimax-testbench/
 ├── static/                 # CSS / JS
 ├── output/                 # 生成的产物（被 .gitignore 忽略）
 ├── samples/                # 参考音频（被 .gitignore 忽略）
+├── pyproject.toml          # 项目元数据 + 依赖声明
+├── uv.lock                 # 锁定的依赖版本（提交到 git）
 ├── .env.example
-├── requirements.txt
 ├── README.md
 ├── REPORT.md               # 真实测试结果 + 踩坑点
 └── LICENSE                 # MIT
